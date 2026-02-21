@@ -8,4 +8,3 @@ Therefore, there is a need for an automated, secure, and transparent workflow ma
 GANTT CHART-
 
 <img width="5782" height="3698" alt="gant-chart" src="https://github.com/user-attachments/assets/243cce97-c76a-4414-bc17-756a96529224" />
-
