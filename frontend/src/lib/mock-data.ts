@@ -49,6 +49,7 @@ export interface Document {
   approval_chain: ApprovalStep[];
   category: string;
   file_name: string;
+  file_url: string;
   audit_log: AuditEntry[];
   version_history: DocumentVersion[];
 }
@@ -65,6 +66,7 @@ export interface Placement {
   signatureId: string;
   x: number;
   y: number;
+  page: number;
 }
 
 export const defaultSignatures: SignatureItem[] = [
@@ -104,6 +106,7 @@ export const initialMockDocuments: Document[] = [
     version: 1,
     category: 'Academic',
     file_name: 'curriculum-framework-aiml.pdf',
+    file_url: 'https://pdfobject.com/pdf/sample.pdf',
     approval_chain: [
       { id: 's1', approver: users[2], order_index: 0, status: 'approved', acted_at: '2026-02-11T10:00:00Z' },
       { id: 's2', approver: currentUser, order_index: 1, status: 'pending' },
@@ -129,6 +132,7 @@ export const initialMockDocuments: Document[] = [
     version: 1,
     category: 'Financial',
     file_name: 'fdp-budget-2026.pdf',
+    file_url: 'https://pdfobject.com/pdf/sample.pdf',
     approval_chain: [
       { id: 's5', approver: users[2], order_index: 0, status: 'approved', acted_at: '2026-02-09T09:00:00Z' },
       { id: 's6', approver: currentUser, order_index: 1, status: 'pending' },
@@ -153,6 +157,7 @@ export const initialMockDocuments: Document[] = [
     version: 2,
     category: 'Procurement',
     file_name: 'lab-equipment-notice-v2.pdf',
+    file_url: 'https://pdfobject.com/pdf/sample.pdf',
     approval_chain: [
       { id: 's8', approver: users[2], order_index: 0, status: 'approved', acted_at: '2026-01-22T10:00:00Z' },
       { id: 's9', approver: currentUser, order_index: 1, status: 'approved', acted_at: '2026-01-25T11:00:00Z' },
@@ -185,6 +190,7 @@ export const initialMockDocuments: Document[] = [
     version: 1,
     category: 'Academic',
     file_name: 'iv-proposal-blr.pdf',
+    file_url: 'https://pdfobject.com/pdf/sample.pdf',
     approval_chain: [
       { id: 's12', approver: currentUser, order_index: 0, status: 'rejected', acted_at: '2026-02-06T13:00:00Z', comment: 'Budget details insufficient. Please provide itemized cost breakdown.' },
       { id: 's13', approver: users[3], order_index: 1, status: 'waiting' },
@@ -208,6 +214,7 @@ export const initialMockDocuments: Document[] = [
     version: 1,
     category: 'Administrative',
     file_name: 'academic-calendar-2026-27.pdf',
+    file_url: 'https://pdfobject.com/pdf/sample.pdf',
     approval_chain: [
       { id: 's14', approver: users[3], order_index: 0, status: 'pending' },
       { id: 's15', approver: users[4], order_index: 1, status: 'waiting' },
@@ -230,6 +237,7 @@ export const initialMockDocuments: Document[] = [
     version: 1,
     category: 'Academic',
     file_name: 'guest-lecture-quantum.pdf',
+    file_url: 'https://pdfobject.com/pdf/sample.pdf',
     approval_chain: [
       { id: 's16', approver: users[2], order_index: 0, status: 'approved', acted_at: '2025-12-18T10:00:00Z' },
       { id: 's17', approver: currentUser, order_index: 1, status: 'approved', acted_at: '2025-12-22T09:00:00Z' },

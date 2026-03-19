@@ -25,6 +25,7 @@ import {
   Collapsible, CollapsibleTrigger, CollapsibleContent,
 } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
+import PDFViewer from '@/components/PDFViewer';
 
 type ReviewPhase = 'idle' | 'gallery' | 'placing' | 'placed';
 
@@ -54,6 +55,7 @@ export default function DocumentReview() {
   const [auditOpen, setAuditOpen] = useState(false);
   const [versionOpen, setVersionOpen] = useState(false);
   const [showReviseModal, setShowReviseModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const reviseFileRef = useRef<HTMLInputElement>(null);
 
   if (!doc) {
@@ -84,7 +86,7 @@ export default function DocumentReview() {
     setPhase('placing');
   };
 
-  const handlePdfClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePdfClick = (e: React.MouseEvent<HTMLDivElement>, pageNum: number) => {
     if (phase !== 'placing' || !selectedSig) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -93,6 +95,7 @@ export default function DocumentReview() {
       id: `p-${Date.now()}`,
       signatureId: selectedSig.id,
       x, y,
+      page: pageNum,
     }]);
     setPhase('placed');
     setSelectedSig(null);
@@ -271,64 +274,72 @@ export default function DocumentReview() {
         </div>
 
         {/* Center - PDF Viewer */}
-        <div className="lg:col-span-6">
-          <div
-            className={cn('institutional-card aspect-[3/4] flex flex-col items-center justify-center bg-muted/30 relative overflow-hidden select-none',
-              phase === 'placing' && 'cursor-crosshair ring-2 ring-primary/30'
-            )}
+        <div className="lg:col-span-6 min-h-[600px]">
+          <PDFViewer 
+            url={doc.file_url} 
+            activePage={currentPage}
+            onPageChange={setCurrentPage}
             onClick={handlePdfClick}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          >
-            <FileText className="h-16 w-16 text-muted-foreground/20" />
-            <p className="mt-4 text-sm text-muted-foreground">PDF Viewer</p>
-            <p className="mt-1 text-xs text-muted-foreground/60">{doc.file_name}</p>
-
-            {/* Show existing approval placements from chain (read-only) */}
-            {doc.approval_chain.filter(s => s.placements?.length).map(step =>
-              step.placements!.map(p => (
-                <div key={p.id} className="absolute pointer-events-none" style={{ left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%, -50%)' }}>
-                  <div className="rounded border border-success/50 bg-success/5 px-2 py-1">
-                    <p className="text-[9px] font-semibold text-success whitespace-nowrap">{step.approver.name}</p>
-                    <p className="text-[7px] text-success/60">{roleLabels[step.approver.role]}</p>
-                  </div>
-                </div>
-              ))
+            className={cn(
+              phase === 'placing' && 'ring-2 ring-primary/40 cursor-crosshair'
             )}
+          >
+            {/* Show existing approval placements from chain (read-only) */}
+            {doc.approval_chain
+              .filter(s => s.placements?.length)
+              .flatMap(step => 
+                (step.placements || [])
+                  .filter(p => p.page === currentPage)
+                  .map(p => (
+                    <div 
+                      key={p.id} 
+                      className="absolute pointer-events-none" 
+                      style={{ left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%, -50%)' }}
+                    >
+                      <div className="rounded border border-success/50 bg-success/10 backdrop-blur-sm px-2 py-1 shadow-sm">
+                        <p className="text-[9px] font-bold text-success whitespace-nowrap uppercase tracking-tighter">{step.approver.name}</p>
+                        <p className="text-[7px] text-success/70 font-medium">{roleLabels[step.approver.role]}</p>
+                      </div>
+                    </div>
+                  ))
+              )}
 
             {/* Current placement (active) */}
-            {placements.map((p) => {
-              const sig = getSignatureById(p.signatureId);
-              return (
-                <div
-                  key={p.id}
-                  className="absolute group cursor-grab active:cursor-grabbing"
-                  style={{ left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%, -50%)' }}
-                  onMouseDown={(e) => handleMouseDown(e, p.id)}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="rounded border-2 border-dashed border-primary/50 bg-primary/5 px-3 py-1.5 relative">
-                    {sig?.preview ? (
-                      <img src={sig.preview} alt={sig.name} className="h-8 w-auto max-w-[80px] object-contain" />
-                    ) : (
-                      <>
-                        <p className="text-[10px] font-semibold text-primary whitespace-nowrap">{currentUser.name}</p>
-                        <p className="text-[8px] text-primary/60">{sig?.type === 'stamp' ? 'STAMP' : roleLabels[currentUser.role]}</p>
-                      </>
-                    )}
-                    <button
-                      className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => { e.stopPropagation(); removePlacement(p.id); }}
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                    <GripVertical className="absolute -left-5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+            {placements
+              .filter(p => p.page === currentPage)
+              .map((p) => {
+                const sig = getSignatureById(p.signatureId);
+                return (
+                  <div
+                    key={p.id}
+                    className="absolute group cursor-grab active:cursor-grabbing pointer-events-auto"
+                    style={{ left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%, -50%)' }}
+                    onMouseDown={(e) => handleMouseDown(e, p.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="rounded border-2 border-dashed border-primary/50 bg-primary/5 backdrop-blur-[2px] px-3 py-1.5 relative shadow-lg transition-transform hover:scale-105">
+                      {sig?.preview ? (
+                        <img src={sig.preview} alt={sig.name} className="h-8 w-auto max-w-[80px] object-contain" />
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <p className="text-[10px] font-bold text-primary whitespace-nowrap uppercase tracking-tighter">{currentUser.name}</p>
+                          <p className="text-[8px] text-primary/70 font-medium uppercase">{sig?.type === 'stamp' ? 'OFFICIAL STAMP' : roleLabels[currentUser.role]}</p>
+                        </div>
+                      )}
+                      <button
+                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 shadow-sm transition-all hover:scale-110 active:scale-90"
+                        onClick={(e) => { e.stopPropagation(); removePlacement(p.id); }}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      <GripVertical className="absolute -left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 opacity-0 group-hover:opacity-100" />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+          </PDFViewer>
         </div>
 
         {/* Right - Actions */}

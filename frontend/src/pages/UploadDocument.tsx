@@ -76,6 +76,7 @@ export default function UploadDocument() {
       version: 1,
       category: 'Academic',
       file_name: file.name,
+      file_url: URL.createObjectURL(file),
       approval_chain: approvers.map((a, i) => ({
         id: `${docId}-s${i}`,
         approver: a,
